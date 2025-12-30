@@ -17,7 +17,6 @@
 
   <PropertyGroup>
     <PackageId>Lod.RecordCollections</PackageId>
-    <Version>0.1.0</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>record collection recordcollection recordlist recorddictionary recordset recordarray recordqueue recordstack valuecollection</PackageTags>
     <PackageProjectUrl>https://github.com/lod-softworks/dotnet-record-collections</PackageProjectUrl>
