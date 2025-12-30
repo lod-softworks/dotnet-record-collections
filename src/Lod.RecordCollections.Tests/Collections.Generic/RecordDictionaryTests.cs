@@ -6,11 +6,13 @@ namespace Lod.RecordCollections.Tests.Collections.Generic;
 public class RecordDictionaryTests
 {
     public TestContext TestContext { get; set; } = null!;
+    protected Random Random { get; } = new();
 
     [TestInitialize]
     public void SetUp()
     {
         RecordCollectionComparer.Default = new RecordCollectionComparer();
+        RecordCollectionCloner.ElementCloner = RecordCollectionCloner.TryCloneElement;
     }
 
     private static int GetSizeOrDefault(int @default)
@@ -203,21 +205,118 @@ public class RecordDictionaryTests
         Assert.IsFalse(areEqual);
     }
 
-    //[TestMethod]
-    //public void RecordDictionary_ClonedRecords_NewUnderlyingElements()
-    //{
-    //    // Arrange
-    //    RecordDictionary<Number> dictionary1 = new() { new Number(92), new Number(117), new Number(420), };
+    [TestMethod]
+    public void RecordDictionary_Clone_ClonesRecordKeysAndValues()
+    {
+        // Arrange
+        Number key1 = new(1);
+        Number key2 = new(2);
+        Number value1 = new(92);
+        Number value2 = new(117);
+        RecordDictionary<Number, Number> original = new() { { key1, value1 }, { key2, value2 } };
 
-    //    // Act
-    //    RecordDictionary<Number> dictionary2 = (RecordDictionary<Number>)typeof(RecordDictionary<Number>).GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic)[0].Invoke(new[] { dictionary1, });
+        // Act
+        RecordDictionary<Number, Number> cloned = TestRecordCollectionCloner.Clone(original);
 
-    //    // Assert
-    //    for (int i = 0; i < dictionary1.Count; i++)
-    //    {
-    //        Assert.IsFalse(ReferenceEquals(dictionary1[i], dictionary2[i]), $"Reference of item {i} are equivielent.");
-    //    }
-    //}
+        // Assert
+        Assert.AreNotSame(original, cloned);
+        Assert.HasCount(original.Count, cloned);
+        foreach (KeyValuePair<Number, Number> kvp in original)
+        {
+            Assert.IsTrue(cloned.ContainsKey(kvp.Key), "Cloned dictionary should contain cloned key");
+            Number clonedKey = cloned.Keys.First(k => k.Value == kvp.Key.Value);
+            Number clonedValue = cloned[clonedKey];
+            Assert.AreNotSame(kvp.Key, clonedKey, "Key should be cloned");
+            Assert.AreNotSame(kvp.Value, clonedValue, "Value should be cloned");
+            Assert.AreEqual(kvp.Key.Value, clonedKey.Value, "Cloned key should have same value");
+            Assert.AreEqual(kvp.Value.Value, clonedValue.Value, "Cloned value should have same value");
+        }
+    }
+
+    [TestMethod]
+    public void RecordDictionary_Clone_NonRecordKeysAndValues_NotCloned()
+    {
+        // Arrange
+        string key1 = Random.Next().ToString();
+        string key2 = Random.Next().ToString();
+        string value1 = Random.Next().ToString();
+        string value2 = Random.Next().ToString();
+        RecordDictionary<string, string> original = new() { { key1, value1 }, { key2, value2 } };
+
+        // Act
+        RecordDictionary<string, string> cloned = TestRecordCollectionCloner.Clone(original);
+
+        // Assert
+        Assert.AreNotSame(original, cloned);
+        Assert.HasCount(original.Count, cloned);
+        foreach (KeyValuePair<string, string> kvp in original)
+        {
+            string clonedKey = cloned.Keys.First(k => ReferenceEquals(k, kvp.Key));
+            string clonedValue = cloned[clonedKey];
+            Assert.AreEqual(kvp.Key, clonedKey, "Non-record key should not be cloned");
+            Assert.AreEqual(kvp.Value, clonedValue, "Non-record value should not be cloned");
+        }
+    }
+
+    [TestMethod]
+    [DoNotParallelize]
+    public void RecordDictionary_Clone_UsesRecordCollectionCloner()
+    {
+        // Arrange
+        TestRecordCollectionCloner testCloner = new();
+        RecordCollectionCloner.ElementCloner = testCloner.CloneElement;
+        Number key1 = new(1);
+        Number value1 = new(92);
+        Number key2 = new(2);
+        Number value2 = new(117);
+        RecordDictionary<Number, Number> original = new() { { key1, value1 }, { key2, value2 } };
+
+        // Act
+        RecordDictionary<Number, Number> cloned = TestRecordCollectionCloner.Clone(original);
+
+        // Assert
+        Assert.AreEqual(4, testCloner.CloneCallCount, "ElementCloner should be called for each key and value");
+        Assert.Contains(key1, testCloner.ClonedObjects);
+        Assert.Contains(value1, testCloner.ClonedObjects);
+        Assert.Contains(key2, testCloner.ClonedObjects);
+        Assert.Contains(value2, testCloner.ClonedObjects);
+    }
+
+    [TestMethod]
+    [DoNotParallelize]
+    public void RecordDictionary_Clone_CustomElementCloner_Used()
+    {
+        // Arrange
+        Number key1 = new(1);
+        Number value1 = new(92);
+        RecordDictionary<Number, Number> original = new() { { key1, value1 } };
+        bool customClonerCalled = false;
+        RecordCollectionCloner.ElementCloner = obj =>
+        {
+            customClonerCalled = true;
+            return obj;
+        };
+
+        // Act
+        RecordDictionary<Number, Number> cloned = TestRecordCollectionCloner.Clone(original);
+
+        // Assert
+        Assert.IsTrue(customClonerCalled, "Custom ElementCloner should be called");
+    }
+
+    [TestMethod]
+    public void RecordDictionary_Clone_EmptyCollection_Clones()
+    {
+        // Arrange
+        RecordDictionary<int, string> original = [];
+
+        // Act
+        RecordDictionary<int, string> cloned = TestRecordCollectionCloner.Clone(original);
+
+        // Assert
+        Assert.AreNotSame(original, cloned);
+        Assert.IsEmpty(cloned);
+    }
 
     [TestMethod]
     public void RecordDictionary_DeserializedNewtonsoft_EqualsReserialized()

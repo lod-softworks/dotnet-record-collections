@@ -6,7 +6,7 @@ namespace System.Collections.Generic;
 partial class RecordStack<T>
 {
     private static IEnumerable<T> CloneEnumerable(IEnumerable<T> source) =>
-        source.Select(o => RecordCloner.TryClone(o) ?? o);
+        source.Reverse().Select(original => RecordCollectionCloner.ElementCloner(original) is T value ? value : original);
 
     /// <summary>
     /// Gets the record equality contract for this collection.
