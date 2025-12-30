@@ -77,6 +77,20 @@ var cloned = original with { }; // Creates new collection with cloned elements
 // If Person is a regular class, cloned retains the original Person instances
 ```
 
+You can customize how collection and element cloning behaves by overriding the cloner delegate. This is useful when non-record elements need explicit deep-copy logic or when integrating with existing cloning mechanisms:
+
+```csharp
+// .NET 6.0 or greater
+IReadOnlyRecordCollection.ElementCloner = obj =>
+    obj is ICloneable cloneable ? cloneable.Clone() : RecordCollectionCloner.TryCloneElement(obj);
+
+// .NET Framework 4.8 or .NET Standard 2.0 (obsolete in .NET 6.0+)
+RecordCollectionCloner.ElementCloner = obj =>
+    obj is ICloneable cloneable ? cloneable.Clone() : RecordCollectionCloner.TryCloneElement(obj);
+```
+
+Collections created without explicitly setting a delegate use the default cloner (which already handles record types). Setting the static property updates the behavior for all subsequent clones in the current AppDomain, mirroring how custom comparers are configured.
+
 ## LINQ Extension Methods
 
 The `RecordEnumerable` class (in the `System.Linq` namespace) provides extension methods similar to `Enumerable`, but for creating Record Collections from any `IEnumerable<T>`. These methods mirror the standard LINQ `ToList()`, `ToDictionary()`, etc., but return Record Collections instead:
