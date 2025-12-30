@@ -77,19 +77,15 @@ var cloned = original with { }; // Creates new collection with cloned elements
 // If Person is a regular class, cloned retains the original Person instances
 ```
 
-You can customize how collection and element cloning behaves by overriding the cloner delegate. This is useful when non-record elements need explicit deep-copy logic or when integrating with existing cloning mechanisms:
+Customize collection and element cloning by overriding the cloner delegate. This allows non-record elements to opt into bespoke deep-copy logic or integrate with an existing cloning system:
 
 ```csharp
 // .NET 6.0 or greater
-IReadOnlyRecordCollection.ElementCloner = obj =>
-    obj is ICloneable cloneable ? cloneable.Clone() : RecordCollectionCloner.TryCloneElement(obj);
+IReadOnlyRecordCollection.ElementCloner = obj => MyCustomCloner.Clone(obj, deep: true);
 
 // .NET Framework 4.8 or .NET Standard 2.0 (obsolete in .NET 6.0+)
-RecordCollectionCloner.ElementCloner = obj =>
-    obj is ICloneable cloneable ? cloneable.Clone() : RecordCollectionCloner.TryCloneElement(obj);
+RecordCollectionCloner.ElementCloner = obj => MyCustomCloner.Clone(obj, deep: true);
 ```
-
-Collections created without explicitly setting a delegate use the default cloner (which already handles record types). Setting the static property updates the behavior for all subsequent clones in the current AppDomain, mirroring how custom comparers are configured.
 
 ## LINQ Extension Methods
 
