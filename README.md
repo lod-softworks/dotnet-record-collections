@@ -77,13 +77,13 @@ var cloned = original with { }; // Creates new collection with cloned elements
 // If Person is a regular class, cloned retains the original Person instances
 ```
 
-Customize collection and element cloning by overriding the cloner delegate. This allows non-record elements to opt into bespoke deep-copy logic or integrate with an existing cloning system:
+Customize collection and element cloning by overriding the cloner delegate:
 
 ```csharp
 // .NET 6.0 or greater
 IReadOnlyRecordCollection.ElementCloner = obj => MyCustomCloner.Clone(obj, deep: true);
 
-// .NET Framework 4.8 or .NET Standard 2.0 (obsolete in .NET 6.0+)
+// .NET Framework 4.8 or .NET Standard 2.0
 RecordCollectionCloner.ElementCloner = obj => MyCustomCloner.Clone(obj, deep: true);
 ```
 
@@ -130,7 +130,7 @@ You can set a default comparer that will be used by all record collections creat
 // .NET 6.0 or greater
 IReadOnlyRecordCollection.DefaultComparer = new MyCustomComparer();
 
-// .NET Framework 4.8 or .NET Standard 2.0 (obsolete in .NET 6.0+)
+// .NET Framework 4.8 or .NET Standard 2.0
 RecordCollectionComparer.Default = new MyCustomComparer();
 ```
 
