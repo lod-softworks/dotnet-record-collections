@@ -6,11 +6,13 @@ namespace Lod.RecordCollections.Tests.Collections.Generic;
 public class RecordStackTests
 {
     public TestContext TestContext { get; set; } = null!;
+    protected Random Random { get; } = new();
 
     [TestInitialize]
     public void SetUp()
     {
         RecordCollectionComparer.Default = new RecordCollectionComparer();
+        RecordCollectionCloner.ElementCloner = RecordCollectionCloner.TryCloneElement;
     }
 
     private static int GetSizeOrDefault(int @default)
@@ -201,6 +203,109 @@ public class RecordStackTests
 
         // Assert
         Assert.IsFalse(areEqual);
+    }
+
+    [TestMethod]
+    public void RecordStack_Clone_ClonesRecordElements()
+    {
+        // Arrange
+        Number num1 = new(92);
+        Number num2 = new(117);
+        Number num3 = new(420);
+        RecordStack<Number> original = new([num1, num2, num3]);
+
+        // Act
+        RecordStack<Number> cloned = TestRecordCollectionCloner.Clone(original);
+
+        // Assert
+        Assert.AreNotSame(original, cloned);
+        Assert.HasCount(original.Count, cloned);
+        Number[] originalArray = [.. original];
+        Number[] clonedArray = [.. cloned];
+        for (int i = 0; i < originalArray.Length; i++)
+        {
+            Assert.AreNotSame(originalArray[i], clonedArray[i], $"Element at index {i} should be cloned");
+            Assert.AreEqual(originalArray[i].Value, clonedArray[i].Value, $"Element at index {i} should have same value");
+        }
+    }
+
+    [TestMethod]
+    public void RecordStack_Clone_NonRecordElements_NotCloned()
+    {
+        // Arrange
+        string obj1 = Random.Next().ToString();
+        string obj2 = Random.Next().ToString();
+        string obj3 = Random.Next().ToString();
+        RecordStack<string> original = new([obj1, obj2, obj3]);
+
+        // Act
+        RecordStack<string> cloned = TestRecordCollectionCloner.Clone(original);
+
+        // Assert
+        Assert.AreNotSame(original, cloned);
+        Assert.HasCount(original.Count, cloned);
+        string[] originalArray = [.. original];
+        string[] clonedArray = [.. cloned];
+        for (int i = 0; i < originalArray.Length; i++)
+        {
+            Assert.AreSame(originalArray[i], clonedArray[i], $"Non-record element at index {i} should not be cloned");
+        }
+    }
+
+    [TestMethod]
+    [DoNotParallelize]
+    public void RecordStack_Clone_UsesRecordCollectionCloner()
+    {
+        // Arrange
+        TestRecordCollectionCloner testCloner = new();
+        RecordCollectionCloner.ElementCloner = testCloner.CloneElement;
+        Number num1 = new(92);
+        Number num2 = new(117);
+        RecordStack<Number> original = new([num1, num2]);
+
+        // Act
+        RecordStack<Number> cloned = TestRecordCollectionCloner.Clone(original);
+
+        // Assert
+        Assert.AreEqual(2, testCloner.CloneCallCount, "ElementCloner should be called for each element");
+        Assert.Contains(num1, testCloner.ClonedObjects);
+        Assert.Contains(num2, testCloner.ClonedObjects);
+    }
+
+    [TestMethod]
+    [DoNotParallelize]
+    public void RecordStack_Clone_CustomElementCloner_Used()
+    {
+        // Arrange
+        Number num1 = new(92);
+        Number num2 = new(117);
+        RecordStack<Number> original = new([num1, num2]);
+        bool customClonerCalled = false;
+        RecordCollectionCloner.ElementCloner = obj =>
+        {
+            customClonerCalled = true;
+            return obj;
+        };
+
+        // Act
+        RecordStack<Number> cloned = TestRecordCollectionCloner.Clone(original);
+
+        // Assert
+        Assert.IsTrue(customClonerCalled, "Custom ElementCloner should be called");
+    }
+
+    [TestMethod]
+    public void RecordStack_Clone_EmptyCollection_Clones()
+    {
+        // Arrange
+        RecordStack<int> original = new();
+
+        // Act
+        RecordStack<int> cloned = TestRecordCollectionCloner.Clone(original);
+
+        // Assert
+        Assert.AreNotSame(original, cloned);
+        Assert.IsEmpty(cloned);
     }
 
     [TestMethod]

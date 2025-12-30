@@ -6,7 +6,7 @@ namespace System.Collections.Generic;
 partial class RecordDictionary<TKey, TValue>
 {
     private static Dictionary<TKey, TValue> CloneDictionary(IDictionary<TKey, TValue> source) =>
-        source.ToDictionary(kv => kv.Key, kv => RecordCloner.TryClone(kv.Value) ?? kv.Value);
+        source.ToDictionary(kv => RecordCollectionCloner.ElementCloner(kv.Key) is TKey key ? key : kv.Key, kv => RecordCollectionCloner.ElementCloner(kv.Value) is TValue value ? value : kv.Value);
 
     /// <summary>
     /// Gets the record equality contract for this collection.

@@ -77,6 +77,16 @@ var cloned = original with { }; // Creates new collection with cloned elements
 // If Person is a regular class, cloned retains the original Person instances
 ```
 
+Customize collection and element cloning by overriding the cloner delegate:
+
+```csharp
+// .NET 6.0 or greater
+IReadOnlyRecordCollection.ElementCloner = obj => MyCustomCloner.Clone(obj, deep: true);
+
+// .NET Framework 4.8 or .NET Standard 2.0
+RecordCollectionCloner.ElementCloner = obj => MyCustomCloner.Clone(obj, deep: true);
+```
+
 ## LINQ Extension Methods
 
 The `RecordEnumerable` class (in the `System.Linq` namespace) provides extension methods similar to `Enumerable`, but for creating Record Collections from any `IEnumerable<T>`. These methods mirror the standard LINQ `ToList()`, `ToDictionary()`, etc., but return Record Collections instead:
@@ -120,7 +130,7 @@ You can set a default comparer that will be used by all record collections creat
 // .NET 6.0 or greater
 IReadOnlyRecordCollection.DefaultComparer = new MyCustomComparer();
 
-// .NET Framework 4.8 or .NET Standard 2.0 (obsolete in .NET 6.0+)
+// .NET Framework 4.8 or .NET Standard 2.0
 RecordCollectionComparer.Default = new MyCustomComparer();
 ```
 

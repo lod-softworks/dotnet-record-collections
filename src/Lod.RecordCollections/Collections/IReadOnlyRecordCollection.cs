@@ -16,6 +16,11 @@ public interface IReadOnlyRecordCollection
     /// </summary>
     /// <remarks>This comparer is used for record collections initialized without specifying a <see cref="IRecordCollectionComparer"/> in their constructor.</remarks>
     public static IRecordCollectionComparer DefaultComparer { get; set; } = new RecordCollectionComparer();
+
+    /// <summary>
+    /// Represents a method that creates a clone of a specified element in a record collection.
+    /// </summary>
+    public static Func<object, object?> ElementCloner { get; set; } = RecordCollectionCloner.TryCloneElement;
 #endif
 
     /// <summary>

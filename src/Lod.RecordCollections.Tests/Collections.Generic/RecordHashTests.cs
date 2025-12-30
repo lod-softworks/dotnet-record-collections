@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Diagnostics;
 
 namespace Lod.RecordCollections.Tests.Collections.Generic;
@@ -6,11 +7,13 @@ namespace Lod.RecordCollections.Tests.Collections.Generic;
 public class RecordSetTests
 {
     public TestContext TestContext { get; set; } = null!;
+    protected Random Random { get; } = new();
 
     [TestInitialize]
     public void SetUp()
     {
         RecordCollectionComparer.Default = new RecordCollectionComparer();
+        RecordCollectionCloner.ElementCloner = RecordCollectionCloner.TryCloneElement;
     }
 
     private static int GetSizeOrDefault(int @default)
@@ -203,21 +206,106 @@ public class RecordSetTests
         Assert.IsFalse(areEqual);
     }
 
-    //[TestMethod]
-    //public void RecordSet_ClonedRecord_NewUnderlyingElements()
-    //{
-    //    // Arrange
-    //    RecordSet<Number> set1 = new() { new Number(92), new Number(117), new Number(420), };
+    [TestMethod]
+    public void RecordSet_Clone_ClonesRecordElements()
+    {
+        // Arrange
+        Number num1 = new(92);
+        Number num2 = new(117);
+        Number num3 = new(420);
+        RecordSet<Number> original = [num1, num2, num3];
 
-    //    // Act
-    //    RecordSet<Number> set2 = (RecordSet<Number>)typeof(RecordSet<Number>).GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic)[0].Invoke(new[] { set1, });
+        // Act
+        RecordSet<Number> cloned = TestRecordCollectionCloner.Clone(original);
 
-    //    // Assert
-    //    foreach (Number number in set1)
-    //    {
-    //        Assert.IsFalse(!set2.Contains(number), $"Reference of items are equivielent.");
-    //    }
-    //}
+        // Assert
+        Assert.AreNotSame(original, cloned);
+        Assert.HasCount(original.Count, cloned);
+        foreach (Number number in original)
+        {
+            Number clonedNumber = cloned.First(n => n.Value == number.Value);
+            Assert.AreNotSame(number, clonedNumber, $"Element with value {number.Value} should be cloned");
+            Assert.AreEqual(number.Value, clonedNumber.Value, $"Cloned element should have same value");
+        }
+    }
+
+    [TestMethod]
+    public void RecordSet_Clone_NonRecordElements_NotCloned()
+    {
+        // Arrange
+        string obj1 = Random.Next().ToString();
+        string obj2 = Random.Next().ToString();
+        string obj3 = Random.Next().ToString();
+        RecordSet<string> original = [obj1, obj2, obj3];
+
+        // Act
+        RecordSet<string> cloned = TestRecordCollectionCloner.Clone(original);
+
+        // Assert
+        Assert.AreNotSame(original, cloned);
+        Assert.HasCount(original.Count, cloned);
+        foreach (object obj in original)
+        {
+            Assert.Contains(obj, cloned, "Cloned set should contain original object reference");
+            Assert.IsTrue(cloned.Any(o => ReferenceEquals(o, obj)), "Non-record element should not be cloned");
+        }
+    }
+
+    [TestMethod]
+    [DoNotParallelize]
+    public void RecordSet_Clone_UsesRecordCollectionCloner()
+    {
+        // Arrange
+        TestRecordCollectionCloner testCloner = new();
+        RecordCollectionCloner.ElementCloner = testCloner.CloneElement;
+        Number num1 = new(92);
+        Number num2 = new(117);
+        RecordSet<Number> original = [num1, num2];
+
+        // Act
+        RecordSet<Number> cloned = TestRecordCollectionCloner.Clone(original);
+
+        // Assert
+        Assert.AreEqual(2, testCloner.CloneCallCount, "ElementCloner should be called for each element");
+        Assert.Contains(num1, testCloner.ClonedObjects);
+        Assert.Contains(num2, testCloner.ClonedObjects);
+    }
+
+    [TestMethod]
+    [DoNotParallelize]
+    public void RecordSet_Clone_CustomElementCloner_Used()
+    {
+        // Arrange
+        Number num1 = new(92);
+        Number num2 = new(117);
+        RecordSet<Number> original = [num1, num2];
+        bool customClonerCalled = false;
+        RecordCollectionCloner.ElementCloner = obj =>
+        {
+            customClonerCalled = true;
+            return obj;
+        };
+
+        // Act
+        RecordSet<Number> cloned = TestRecordCollectionCloner.Clone(original);
+
+        // Assert
+        Assert.IsTrue(customClonerCalled, "Custom ElementCloner should be called");
+    }
+
+    [TestMethod]
+    public void RecordSet_Clone_EmptyCollection_Clones()
+    {
+        // Arrange
+        RecordSet<int> original = [];
+
+        // Act
+        RecordSet<int> cloned = TestRecordCollectionCloner.Clone(original);
+
+        // Assert
+        Assert.AreNotSame(original, cloned);
+        Assert.IsEmpty(cloned);
+    }
 
     [TestMethod]
     public void RecordSet_DeserializedNewtonsoft_EqualsReserialized()
