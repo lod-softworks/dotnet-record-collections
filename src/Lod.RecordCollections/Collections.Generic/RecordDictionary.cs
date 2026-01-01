@@ -70,7 +70,7 @@ public partial class RecordDictionary<TKey, TValue>
     /// <param name="collection">The collection whose elements are copied to the new dictionary.</param>
     /// <param name="comparer">The comparer used for record equality.</param>
     public RecordDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IRecordCollectionComparer? comparer)
-        : base(collection?.ToDictionary(kv => kv.Key, kv => kv.Value)!)
+        : base(collection ?? throw new ArgumentNullException(nameof(collection)))
     {
         Comparer = comparer ?? RecordCollectionComparer.Default;
     }
