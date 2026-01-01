@@ -37,14 +37,21 @@ partial class RecordCollectionComparer
             {
                 IEnumerator e1 = seqX.GetEnumerator();
                 IEnumerator e2 = seqY.GetEnumerator();
-
-                while (true)
+                try
                 {
-                    bool m1 = e1.MoveNext();
-                    bool m2 = e2.MoveNext();
-                    if (m1 != m2) return false;
-                    if (!m1) return true;
-                    if (!Equals(e1.Current, e2.Current)) return false;
+                    while (true)
+                    {
+                        bool m1 = e1.MoveNext();
+                        bool m2 = e2.MoveNext();
+                        if (m1 != m2) return false;
+                        if (!m1) return true;
+                        if (!Equals(e1.Current, e2.Current)) return false;
+                    }
+                }
+                finally
+                {
+                    (e1 as IDisposable)?.Dispose();
+                    (e2 as IDisposable)?.Dispose();
                 }
             }
 

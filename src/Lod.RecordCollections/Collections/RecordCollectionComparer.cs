@@ -110,7 +110,7 @@ public partial class RecordCollectionComparer
         // Record equality contract: different collection types are not considered equal.
         Type xType = x.GetType();
         Type yType = y.GetType();
-        if (xType != yType && !xType.IsAssignableFrom(yType) && !yType.IsAssignableFrom(xType)) return false;
+        if (xType != yType) return false;
 
         IComparisonStrategy strategy = GetStrategy(x.GetType());
         return strategy.Equals(x, y);
