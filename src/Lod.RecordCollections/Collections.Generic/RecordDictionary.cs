@@ -73,7 +73,7 @@ public partial class RecordDictionary<TKey, TValue>
 #if NET6_0_OR_GREATER
         : base(collection)
 #else
-        : base(collection.ToDictionary(kv => kv.Key, kv => kv.Value))
+        : base(collection?.ToDictionary(kv => kv.Key, kv => kv.Value)!)
 #endif
     {
         Comparer = comparer ?? RecordCollectionComparer.Default;
