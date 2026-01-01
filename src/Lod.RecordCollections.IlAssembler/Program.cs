@@ -6,61 +6,6 @@ string dllPath = !string.IsNullOrWhiteSpace(args.FirstOrDefault()) ? args.First(
     : throw new ArgumentException("Lod.RecordCollections DLL not found in args.");
 if (!File.Exists(dllPath)) throw new FileNotFoundException("Lod.RecordCollections.dll");
 
-static string GetSearchDirectory()
-{
-    // Prefer the app base directory (more deterministic/safer than CWD), fallback to the current directory.
-    string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-    return !string.IsNullOrWhiteSpace(baseDir) ? baseDir : Directory.GetCurrentDirectory();
-}
-
-static string FindToolPath(string searchDirectory, string fileName)
-{
-    string searchRoot = Path.GetFullPath(searchDirectory);
-
-    string? candidate = Directory.EnumerateFiles(searchRoot, fileName, SearchOption.AllDirectories).FirstOrDefault();
-    if (candidate == null) throw new FileNotFoundException(fileName);
-
-    string fullCandidate = Path.GetFullPath(candidate);
-    if (!string.Equals(Path.GetFileName(fullCandidate), fileName, StringComparison.OrdinalIgnoreCase))
-    {
-        throw new FileNotFoundException($"Resolved tool does not match expected filename '{fileName}'.", fullCandidate);
-    }
-
-    // Ensure the discovered tool is under our intended search root.
-    if (!fullCandidate.StartsWith(searchRoot.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
-    {
-        throw new FileNotFoundException($"Resolved tool '{fileName}' is outside of the search directory.", fullCandidate);
-    }
-
-    return fullCandidate;
-}
-
-static async Task<(int ExitCode, string StdOut, string StdErr)> RunProcessAsync(string fileName, string arguments, string workingDirectory)
-{
-    var startInfo = new ProcessStartInfo
-    {
-        FileName = fileName,
-        Arguments = arguments,
-        WorkingDirectory = workingDirectory,
-        UseShellExecute = false,
-        RedirectStandardOutput = true,
-        RedirectStandardError = true,
-        CreateNoWindow = true,
-    };
-
-    using Process process = Process.Start(startInfo)
-        ?? throw new InvalidOperationException($"Failed to start process '{fileName}'.");
-
-    Task<string> stdOutTask = process.StandardOutput.ReadToEndAsync();
-    Task<string> stdErrTask = process.StandardError.ReadToEndAsync();
-
-    await process.WaitForExitAsync();
-    string stdOut = await stdOutTask;
-    string stdErr = await stdErrTask;
-
-    return (process.ExitCode, stdOut, stdErr);
-}
-
 string directory = GetSearchDirectory();
 Console.WriteLine($"Searching for ilasm/ildasm in directory '{directory}'.");
 string ilasmPath = FindToolPath(directory, "ilasm.exe");
@@ -146,3 +91,58 @@ if (asmExitCode != 0)
 #if DEBUG
 Console.ReadKey();
 #endif
+
+static string GetSearchDirectory()
+{
+    // Prefer the app base directory (more deterministic/safer than CWD), fallback to the current directory.
+    string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+    return !string.IsNullOrWhiteSpace(baseDir) ? baseDir : Directory.GetCurrentDirectory();
+}
+
+static string FindToolPath(string searchDirectory, string fileName)
+{
+    string searchRoot = Path.GetFullPath(searchDirectory);
+
+    string? candidate = Directory.EnumerateFiles(searchRoot, fileName, SearchOption.AllDirectories).FirstOrDefault();
+    if (candidate == null) throw new FileNotFoundException(fileName);
+
+    string fullCandidate = Path.GetFullPath(candidate);
+    if (!string.Equals(Path.GetFileName(fullCandidate), fileName, StringComparison.OrdinalIgnoreCase))
+    {
+        throw new FileNotFoundException($"Resolved tool does not match expected filename '{fileName}'.", fullCandidate);
+    }
+
+    // Ensure the discovered tool is under our intended search root.
+    if (!fullCandidate.StartsWith(searchRoot.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+    {
+        throw new FileNotFoundException($"Resolved tool '{fileName}' is outside of the search directory.", fullCandidate);
+    }
+
+    return fullCandidate;
+}
+
+static async Task<(int ExitCode, string StdOut, string StdErr)> RunProcessAsync(string fileName, string arguments, string workingDirectory)
+{
+    var startInfo = new ProcessStartInfo
+    {
+        FileName = fileName,
+        Arguments = arguments,
+        WorkingDirectory = workingDirectory,
+        UseShellExecute = false,
+        RedirectStandardOutput = true,
+        RedirectStandardError = true,
+        CreateNoWindow = true,
+    };
+
+    using Process process = Process.Start(startInfo)
+        ?? throw new InvalidOperationException($"Failed to start process '{fileName}'.");
+
+    Task<string> stdOutTask = process.StandardOutput.ReadToEndAsync();
+    Task<string> stdErrTask = process.StandardError.ReadToEndAsync();
+
+    await process.WaitForExitAsync();
+    string stdOut = await stdOutTask;
+    string stdErr = await stdErrTask;
+
+    return (process.ExitCode, stdOut, stdErr);
+}
