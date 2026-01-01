@@ -1,0 +1,67 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Product>Lod.RecordCollections.IlModified.Tests</Product>
+    <AssemblyName>Lod.RecordCollections.IlModified.Tests</AssemblyName>
+    <RootNamespace>Lod.RecordCollections.IlModified.Tests</RootNamespace>
+    <Copyright>Copyright © 2022-2025 Lod Softworks LLC</Copyright>
+    <Description>Smoke tests against IL-modified Lod.RecordCollections assemblies.</Description>
+    <TargetFrameworks>net8.0;net10.0;net4.8</TargetFrameworks>
+    <TargetType>library</TargetType>
+    <OutputType>Library</OutputType>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <GenerateProgramFile>false</GenerateProgramFile>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+    <Using Include="System.Collections.Generic" />
+    <Using Include="System.IO" />
+    <Using Include="System.Reflection" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="4.0.2" />
+    <PackageReference Include="MSTest.TestFramework" Version="4.0.2" />
+  </ItemGroup>
+
+  <!--
+    Intentionally reference the compiled (and CI-modified) outputs directly.
+    This ensures features like `with { }` compile against the IL-modified binaries.
+  -->
+  <ItemGroup>
+    <Reference Include="Lod.RecordCollections">
+      <HintPath>$(MSBuildProjectDirectory)\bin\$(Configuration)\$(TargetFramework)\Lod.RecordCollections.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="PrepareIlModifiedDll" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <RecordCollectionsProjectPath>$(MSBuildProjectDirectory)\..\Lod.RecordCollections\Lod.RecordCollections.csproj</RecordCollectionsProjectPath>
+      <IlAssemblerProjectPath>$(MSBuildProjectDirectory)\..\Lod.RecordCollections.IlAssembler\Lod.RecordCollections.IlAssembler.csproj</IlAssemblerProjectPath>
+      <IlAssemblerExePath>$(MSBuildProjectDirectory)\..\Lod.RecordCollections.IlAssembler\bin\$(Configuration)\net10.0\Lod.RecordCollections.IlAssembler.dll</IlAssemblerExePath>
+      <SourceDllPath>$(MSBuildProjectDirectory)\..\Lod.RecordCollections\bin\$(Configuration)\$(TargetFramework)\Lod.RecordCollections.dll</SourceDllPath>
+      <OutputDirectory>$(MSBuildProjectDirectory)\bin\$(Configuration)\$(TargetFramework)</OutputDirectory>
+      <OutputDllPath>$(OutputDirectory)\Lod.RecordCollections.dll</OutputDllPath>
+    </PropertyGroup>
+
+    <!-- Ensure output directory exists -->
+    <MakeDir Directories="$(OutputDirectory)" />
+
+    <!-- Build RecordCollections if DLL doesn't exist -->
+    <MSBuild Condition="!Exists('$(SourceDllPath)')" Projects="$(RecordCollectionsProjectPath)" Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework)" Targets="Build" />
+
+    <!-- Build ILAssembler if it doesn't exist (should already be built by solution build) -->
+    <MSBuild Condition="!Exists('$(IlAssemblerExePath)')" Projects="$(IlAssemblerProjectPath)" Properties="Configuration=$(Configuration);TargetFramework=net10.0" Targets="Build" />
+
+    <!-- Run ILAssembler to create modified DLL in test output directory -->
+    <Exec Condition="Exists('$(SourceDllPath)') And Exists('$(IlAssemblerExePath)')" Command="dotnet &quot;$(IlAssemblerExePath)&quot; &quot;$(SourceDllPath)&quot; &quot;$(OutputDirectory)&quot;" ContinueOnError="false" WorkingDirectory="$(MSBuildProjectDirectory)" />
+  </Target>
+
+</Project>

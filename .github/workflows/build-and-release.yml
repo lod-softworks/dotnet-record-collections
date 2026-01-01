@@ -1,9 +1,8 @@
 name: Build & Release
 
 on:
-  push:
-    tags:
-    - '*'
+  release:
+    types: [created]
   workflow_dispatch:
     inputs:
       tag:
@@ -27,10 +26,18 @@ jobs:
       id: set-version
       shell: pwsh
       run: |
-        if ("${{ github.event_name }}" -eq "push") {
-          $version = "${{ github.ref_name }}"
+        if ("${{ github.event_name }}" -eq "release") {
+          $version = "${{ github.event.release.tag_name }}"
+          # Remove 'v' prefix if present (e.g., v1.0.0 -> 1.0.0)
+          if ($version -match '^v(.+)$') {
+            $version = $matches[1]
+          }
         } else {
           $version = "${{ inputs.tag }}"
+          # Remove 'v' prefix if present
+          if ($version -match '^v(.+)$') {
+            $version = $matches[1]
+          }
         }
         Write-Host "Set version to: $version"
         echo "version=$version" >> $env:GITHUB_OUTPUT
@@ -39,25 +46,26 @@ jobs:
       run: dotnet restore ./src/Lod.RecordCollections.sln
 
     - name: Build
-      run: dotnet build ./src/Lod.RecordCollections.sln -c Release --no-restore -p:DebugType=portable -p:DebugSymbols=true -p:Version=${{ steps.set-version.outputs.version }} -p:AssemblyVersion=${{ steps.set-version.outputs.version }} -p:FileVersion=${{ steps.set-version.outputs.version }}
+      run: |
+        dotnet build ./src/Lod.RecordCollections/Lod.RecordCollections.csproj -c Release --no-restore -p:DebugType=portable -p:DebugSymbols=true -p:Version=${{ steps.set-version.outputs.version }} -p:AssemblyVersion=${{ steps.set-version.outputs.version }} -p:FileVersion=${{ steps.set-version.outputs.version }}
+        dotnet build ./src/Lod.RecordCollections.IlAssembler/Lod.RecordCollections.IlAssembler.csproj -c Release --no-restore
 
     - name: Test
-      run: dotnet test ./src/Lod.RecordCollections.sln -c Release --no-restore --no-build
+      run: dotnet test ./src/Lod.RecordCollections.Tests/Lod.RecordCollections.Tests.csproj -c Release --no-restore
 
-    - name: IL Class/Record Conversion (netstandard2.0))
-      run: dotnet ./src/Lod.RecordCollections.IlAssembler/bin/Release/net10.0/Lod.RecordCollections.IlAssembler.dll D:\a\dotnet-record-collections\dotnet-record-collections\src\Lod.RecordCollections\bin\Release\netstandard2.0\Lod.RecordCollections.dll
-
-    - name: IL Class/Record Conversion (net4.8))
-      run: dotnet ./src/Lod.RecordCollections.IlAssembler/bin/Release/net10.0/Lod.RecordCollections.IlAssembler.dll D:\a\dotnet-record-collections\dotnet-record-collections\src\Lod.RecordCollections\bin\Release\net4.8\Lod.RecordCollections.dll
-
-    - name: IL Class/Record Conversion (net8.0))
-      run: dotnet ./src/Lod.RecordCollections.IlAssembler/bin/Release/net10.0/Lod.RecordCollections.IlAssembler.dll D:\a\dotnet-record-collections\dotnet-record-collections\src\Lod.RecordCollections\bin\Release\net8.0\Lod.RecordCollections.dll
-
-    - name: IL Class/Record Conversion (net10.0))
-      run: dotnet ./src/Lod.RecordCollections.IlAssembler/bin/Release/net10.0/Lod.RecordCollections.IlAssembler.dll D:\a\dotnet-record-collections\dotnet-record-collections\src\Lod.RecordCollections\bin\Release\net10.0\Lod.RecordCollections.dll
+    - name: IL Class/Record Conversion
+      working-directory: ./src/Lod.RecordCollections.IlAssembler/bin/Release/net10.0
+      run: |
+        dotnet Lod.RecordCollections.IlAssembler.dll ../../../Lod.RecordCollections/bin/Release/netstandard2.0/Lod.RecordCollections.dll
+        dotnet Lod.RecordCollections.IlAssembler.dll ../../../Lod.RecordCollections/bin/Release/net4.8/Lod.RecordCollections.dll
+        dotnet Lod.RecordCollections.IlAssembler.dll ../../../Lod.RecordCollections/bin/Release/net8.0/Lod.RecordCollections.dll
+        dotnet Lod.RecordCollections.IlAssembler.dll ../../../Lod.RecordCollections/bin/Release/net10.0/Lod.RecordCollections.dll
 
     - name: NuGet Pack
       run: dotnet pack ./src/Lod.RecordCollections/Lod.RecordCollections.csproj -c Release --no-restore --include-symbols --no-build -p:Version=${{ steps.set-version.outputs.version }} -p:PackageVersion=${{ steps.set-version.outputs.version }}
+
+    - name: Test (Post-IL Modified)
+      run: dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c Release -m:1 --no-restore --verbosity normal
 
     - name: NuGet Push
       run: dotnet nuget push ./src/Lod.RecordCollections/bin/Release/Lod.RecordCollections.${{ steps.set-version.outputs.version }}.nupkg --api-key ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json
