@@ -1,16 +1,15 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 
 Console.WriteLine($"Preparing IL modification of Lod.RecordCollections to '{args.FirstOrDefault()}'");
 
 string dllPath = !string.IsNullOrWhiteSpace(args.FirstOrDefault()) ? args.First()
     : throw new ArgumentException("Lod.RecordCollections DLL not found in args.");
 if (!File.Exists(dllPath)) throw new FileNotFoundException("Lod.RecordCollections.dll");
-string directory = Directory.GetCurrentDirectory();
+
+string directory = GetSearchDirectory();
 Console.WriteLine($"Searching for ilasm/ildasm in directory '{directory}'.");
-string ilasmPath = Directory.EnumerateFiles(directory, "ilasm.exe", SearchOption.AllDirectories).FirstOrDefault()
-    ?? throw new FileNotFoundException("ilasm.exe");
-string ildasmPath = Directory.EnumerateFiles(directory, "ildasm.exe", SearchOption.AllDirectories).FirstOrDefault()
-    ?? throw new FileNotFoundException("ildasm.exe");
+string ilasmPath = FindToolPath(directory, "ilasm.exe");
+string ildasmPath = FindToolPath(directory, "ildasm.exe");
 
 
 // decompile
@@ -19,12 +18,11 @@ Console.WriteLine("Decompiling IL.");
 string fileName = "Lod.RecordCollections.il";
 string ilPath = Path.Combine(directory, fileName);
 
-Process dasmProcess = Process.Start(ildasmPath, $"\"{dllPath}\" /out:\"{ilPath}\"");
-#if DEBUG
-dasmProcess.OutputDataReceived += (s, e) => Console.WriteLine(e?.Data);
-#endif
-await dasmProcess.WaitForExitAsync();
-if (dasmProcess.ExitCode != 0) throw new InvalidOperationException("IL decompilation failed.");
+var (dasmExitCode, dasmOut, dasmErr) = await RunProcessAsync(ildasmPath, $"\"{dllPath}\" /out:\"{ilPath}\"", directory);
+if (dasmExitCode != 0)
+{
+    throw new InvalidOperationException($"IL decompilation failed (exit code {dasmExitCode}).\n{dasmOut}\n{dasmErr}");
+}
 
 
 // modify
@@ -83,14 +81,68 @@ if (File.Exists(pdbPath))
     ilasmArgs += $" /pdb:\"{pdbPath}\"";
 }
 
-Process asmProcess = Process.Start(ilasmPath, ilasmArgs);
-#if DEBUG
-asmProcess.OutputDataReceived += (s, e) => Console.WriteLine(e?.Data);
-#endif
-await asmProcess.WaitForExitAsync();
-if (asmProcess.ExitCode != 0) throw new InvalidOperationException("IL compilation failed.");
+var (asmExitCode, asmOut, asmErr) = await RunProcessAsync(ilasmPath, ilasmArgs, directory);
+if (asmExitCode != 0)
+{
+    throw new InvalidOperationException($"IL compilation failed (exit code {asmExitCode}).\n{asmOut}\n{asmErr}");
+}
 
 
 #if DEBUG
 Console.ReadKey();
 #endif
+
+static string GetSearchDirectory()
+{
+    // Prefer the app base directory (more deterministic/safer than CWD), fallback to the current directory.
+    string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+    return !string.IsNullOrWhiteSpace(baseDir) ? baseDir : Directory.GetCurrentDirectory();
+}
+
+static string FindToolPath(string searchDirectory, string fileName)
+{
+    string searchRoot = Path.GetFullPath(searchDirectory);
+
+    string? candidate = Directory.EnumerateFiles(searchRoot, fileName, SearchOption.AllDirectories).FirstOrDefault();
+    if (candidate == null) throw new FileNotFoundException(fileName);
+
+    string fullCandidate = Path.GetFullPath(candidate);
+    if (!string.Equals(Path.GetFileName(fullCandidate), fileName, StringComparison.OrdinalIgnoreCase))
+    {
+        throw new FileNotFoundException($"Resolved tool does not match expected filename '{fileName}'.", fullCandidate);
+    }
+
+    // Ensure the discovered tool is under our intended search root.
+    if (!fullCandidate.StartsWith(searchRoot.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+    {
+        throw new FileNotFoundException($"Resolved tool '{fileName}' is outside of the search directory.", fullCandidate);
+    }
+
+    return fullCandidate;
+}
+
+static async Task<(int ExitCode, string StdOut, string StdErr)> RunProcessAsync(string fileName, string arguments, string workingDirectory)
+{
+    var startInfo = new ProcessStartInfo
+    {
+        FileName = fileName,
+        Arguments = arguments,
+        WorkingDirectory = workingDirectory,
+        UseShellExecute = false,
+        RedirectStandardOutput = true,
+        RedirectStandardError = true,
+        CreateNoWindow = true,
+    };
+
+    using Process process = Process.Start(startInfo)
+        ?? throw new InvalidOperationException($"Failed to start process '{fileName}'.");
+
+    Task<string> stdOutTask = process.StandardOutput.ReadToEndAsync();
+    Task<string> stdErrTask = process.StandardError.ReadToEndAsync();
+
+    await process.WaitForExitAsync();
+    string stdOut = await stdOutTask;
+    string stdErr = await stdErrTask;
+
+    return (process.ExitCode, stdOut, stdErr);
+}
