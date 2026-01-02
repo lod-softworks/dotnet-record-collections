@@ -8,7 +8,6 @@
     <Description>Smoke tests against IL-modified Lod.RecordCollections assemblies.</Description>
     <TargetFrameworks>net8.0;net10.0;net4.8</TargetFrameworks>
     <TargetType>library</TargetType>
-    <OutputType>Library</OutputType>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -20,8 +19,6 @@
   <ItemGroup>
     <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
     <Using Include="System.Collections.Generic" />
-    <Using Include="System.IO" />
-    <Using Include="System.Reflection" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,37 +28,37 @@
   </ItemGroup>
 
   <!--
-    Intentionally reference the compiled (and CI-modified) outputs directly.
-    This ensures features like `with { }` compile against the IL-modified binaries.
+    The IL verification tests are designed to run only in CI.
+
+    In CI, after building Lod.RecordCollections and applying IL modification, the workflow copies
+    the modified Lod.RecordCollections.dll into this project's output folder (next to the test DLL).
+
+    If the DLL is not present (typical local dev), we emit a warning and exclude the IL verification
+    test sources from compilation so the project still builds cleanly.
   -->
-  <ItemGroup>
+  <PropertyGroup>
+    <IlVerificationDllPath>$(MSBuildProjectDirectory)\bin\$(Configuration)\$(TargetFramework)\Lod.RecordCollections.dll</IlVerificationDllPath>
+  </PropertyGroup>
+
+  <ItemGroup Condition="Exists('$(IlVerificationDllPath)')">
     <Reference Include="Lod.RecordCollections">
-      <HintPath>$(MSBuildProjectDirectory)\bin\$(Configuration)\$(TargetFramework)\Lod.RecordCollections.dll</HintPath>
-      <Private>true</Private>
+      <HintPath>$(IlVerificationDllPath)</HintPath>
+      <Private>false</Private>
     </Reference>
   </ItemGroup>
 
-  <Target Name="PrepareIlModifiedDll" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <RecordCollectionsProjectPath>$(MSBuildProjectDirectory)\..\Lod.RecordCollections\Lod.RecordCollections.csproj</RecordCollectionsProjectPath>
-      <IlAssemblerProjectPath>$(MSBuildProjectDirectory)\..\Lod.RecordCollections.IlAssembler\Lod.RecordCollections.IlAssembler.csproj</IlAssemblerProjectPath>
-      <IlAssemblerExePath>$(MSBuildProjectDirectory)\..\Lod.RecordCollections.IlAssembler\bin\$(Configuration)\net10.0\Lod.RecordCollections.IlAssembler.dll</IlAssemblerExePath>
-      <SourceDllPath>$(MSBuildProjectDirectory)\..\Lod.RecordCollections\bin\$(Configuration)\$(TargetFramework)\Lod.RecordCollections.dll</SourceDllPath>
-      <OutputDirectory>$(MSBuildProjectDirectory)\bin\$(Configuration)\$(TargetFramework)</OutputDirectory>
-      <OutputDllPath>$(OutputDirectory)\Lod.RecordCollections.dll</OutputDllPath>
-    </PropertyGroup>
+  <ItemGroup Condition="Exists('$(IlVerificationDllPath)')">
+    <Compile Remove="IlVerificationNotAvailable.cs" />
+  </ItemGroup>
 
-    <!-- Ensure output directory exists -->
-    <MakeDir Directories="$(OutputDirectory)" />
+  <ItemGroup Condition="!Exists('$(IlVerificationDllPath)')">
+    <Compile Remove="IlModifiedRecordCollectionsSmokeTests.cs" />
+  </ItemGroup>
 
-    <!-- Build RecordCollections if DLL doesn't exist -->
-    <MSBuild Condition="!Exists('$(SourceDllPath)')" Projects="$(RecordCollectionsProjectPath)" Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework)" Targets="Build" />
-
-    <!-- Build ILAssembler if it doesn't exist (should already be built by solution build) -->
-    <MSBuild Condition="!Exists('$(IlAssemblerExePath)')" Projects="$(IlAssemblerProjectPath)" Properties="Configuration=$(Configuration);TargetFramework=net10.0" Targets="Build" />
-
-    <!-- Run ILAssembler to create modified DLL in test output directory -->
-    <Exec Condition="Exists('$(SourceDllPath)') And Exists('$(IlAssemblerExePath)')" Command="dotnet &quot;$(IlAssemblerExePath)&quot; &quot;$(SourceDllPath)&quot; &quot;$(OutputDirectory)&quot;" ContinueOnError="false" WorkingDirectory="$(MSBuildProjectDirectory)" />
+  <Target Name="WarnIfIlVerificationDllMissing"
+          BeforeTargets="Build"
+          Condition="!Exists('$(IlVerificationDllPath)')">
+    <Warning Text="IL verification tests are only available in the CI/CD pipeline" />
   </Target>
 
 </Project>

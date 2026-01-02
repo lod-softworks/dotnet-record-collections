@@ -38,5 +38,25 @@ jobs:
         dotnet Lod.RecordCollections.IlAssembler.dll ../../../../Lod.RecordCollections/bin/Release/net8.0/Lod.RecordCollections.dll
         dotnet Lod.RecordCollections.IlAssembler.dll ../../../../Lod.RecordCollections/bin/Release/net10.0/Lod.RecordCollections.dll
 
-    - name: Test (Post-IL Modified)
-      run: dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c Release -m:1 --no-restore --verbosity normal
+    - name: Prepare Post-IL Modified Tests
+      shell: pwsh
+      run: |
+        $config = "Release"
+        $testOutBase = Join-Path "." "src/Lod.RecordCollections.IlModified.Tests/bin/$config"
+        $libOutBase = Join-Path "." "src/Lod.RecordCollections/bin/$config"
+        $tfms = @("net8.0", "net10.0", "net4.8")
+
+        foreach ($tfm in $tfms) {
+          $dest = Join-Path $testOutBase $tfm
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          Copy-Item (Join-Path $libOutBase "$tfm/Lod.RecordCollections.dll") (Join-Path $dest "Lod.RecordCollections.dll") -Force
+        }
+
+    - name: Test (Post-IL Modified) net8.0
+      run: dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c Release -m:1 --framework net8.0 --no-restore --verbosity normal
+
+    - name: Test (Post-IL Modified) net10.0
+      run: dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c Release -m:1 --framework net10.0 --no-restore --verbosity normal
+
+    - name: Test (Post-IL Modified) net4.8
+      run: dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c Release -m:1 --framework net4.8 --no-restore --verbosity normal

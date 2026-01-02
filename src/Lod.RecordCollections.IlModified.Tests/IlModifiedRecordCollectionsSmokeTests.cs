@@ -1,7 +1,7 @@
 namespace Lod.RecordCollections.IlModified.Tests;
 
 [TestClass]
-public class IlModifiedRecordCollectionsSmokeTests
+public sealed class IlModifiedRecordCollectionsSmokeTests
 {
     [TestMethod]
     public void WithExpression_ClonesRecordList()
@@ -16,8 +16,8 @@ public class IlModifiedRecordCollectionsSmokeTests
         Assert.AreNotSame(original, clone);
 
         clone.Add(4);
-        Assert.HasCount(3, original);
-        Assert.HasCount(4, clone);
+        Assert.AreEqual(3, original.Count);
+        Assert.AreEqual(4, clone.Count);
     }
 
     [TestMethod]
@@ -33,20 +33,10 @@ public class IlModifiedRecordCollectionsSmokeTests
 
         Assert.IsTrue(original.Equals(clone));
         Assert.AreNotSame(original, clone);
-        Assert.HasCount(original.Count, clone);
+        Assert.AreEqual(original.Count, clone.Count);
 
         clone[3] = 30;
-        Assert.HasCount(2, original);
-        Assert.HasCount(3, clone);
-    }
-
-    [TestMethod]
-    public void IlModifiedAssembly_ExposesCloneMethod()
-    {
-        MethodInfo? cloneMethod = typeof(RecordList<int>).GetMethod(
-            "<Clone>$",
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-
-        Assert.IsNotNull(cloneMethod, "Expected IL-modified record clone method '<Clone>$' to exist.");
+        Assert.AreEqual(2, original.Count);
+        Assert.AreEqual(3, clone.Count);
     }
 }

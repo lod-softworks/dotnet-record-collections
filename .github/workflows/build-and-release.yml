@@ -65,7 +65,22 @@ jobs:
       run: dotnet pack ./src/Lod.RecordCollections/Lod.RecordCollections.csproj -c Release --no-restore --include-symbols --no-build -p:Version=${{ steps.set-version.outputs.version }} -p:PackageVersion=${{ steps.set-version.outputs.version }}
 
     - name: Test (Post-IL Modified)
-      run: dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c Release -m:1 --no-restore --verbosity normal
+      shell: pwsh
+      run: |
+        $config = "Release"
+        $testOutBase = Join-Path "." "src/Lod.RecordCollections.IlModified.Tests/bin/$config"
+        $libOutBase = Join-Path "." "src/Lod.RecordCollections/bin/$config"
+        $tfms = @("net8.0", "net10.0", "net4.8")
+
+        foreach ($tfm in $tfms) {
+          $dest = Join-Path $testOutBase $tfm
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          Copy-Item (Join-Path $libOutBase "$tfm/Lod.RecordCollections.dll") (Join-Path $dest "Lod.RecordCollections.dll") -Force
+        }
+
+        dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c Release -m:1 --framework net8.0 --no-restore --verbosity normal
+        dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c Release -m:1 --framework net10.0 --no-restore --verbosity normal
+        dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c Release -m:1 --framework net4.8 --no-restore --verbosity normal
 
     - name: NuGet Push
       run: dotnet nuget push ./src/Lod.RecordCollections/bin/Release/Lod.RecordCollections.${{ steps.set-version.outputs.version }}.nupkg --api-key ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json
