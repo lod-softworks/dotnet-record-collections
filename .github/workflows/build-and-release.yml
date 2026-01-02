@@ -43,7 +43,7 @@ jobs:
         echo "version=$version" >> $env:GITHUB_OUTPUT
 
     - name: Restore Dependencies
-      run: dotnet restore ./src/Lod.RecordCollections.sln
+      run: dotnet restore ./Lod.RecordCollections.slnx
 
     - name: Build
       run: |
