@@ -19,7 +19,7 @@ jobs:
       with:
         dotnet-version: 10.0.x
 
-    - name: Restore dependencies
+    - name: Restore Dependencies
       run: dotnet restore ./src/Lod.RecordCollections.sln
 
     - name: Build
@@ -31,32 +31,30 @@ jobs:
       run: dotnet test ./src/Lod.RecordCollections.Tests/Lod.RecordCollections.Tests.csproj -c Release --no-restore --verbosity normal
 
     - name: IL Class/Record Conversion
+      shell: pwsh
       working-directory: ./src/Lod.RecordCollections.IlAssembler/bin/Release/net10.0
       run: |
-        dotnet Lod.RecordCollections.IlAssembler.dll ../../../../Lod.RecordCollections/bin/Release/netstandard2.0/Lod.RecordCollections.dll
-        dotnet Lod.RecordCollections.IlAssembler.dll ../../../../Lod.RecordCollections/bin/Release/net4.8/Lod.RecordCollections.dll
-        dotnet Lod.RecordCollections.IlAssembler.dll ../../../../Lod.RecordCollections/bin/Release/net8.0/Lod.RecordCollections.dll
-        dotnet Lod.RecordCollections.IlAssembler.dll ../../../../Lod.RecordCollections/bin/Release/net10.0/Lod.RecordCollections.dll
-
-    - name: Prepare Post-IL Modified Tests
-      shell: pwsh
-      run: |
-        $config = "Release"
-        $testOutBase = Join-Path "." "src/Lod.RecordCollections.IlModified.Tests/bin/$config"
-        $libOutBase = Join-Path "." "src/Lod.RecordCollections/bin/$config"
-        $tfms = @("net8.0", "net10.0", "net4.8")
-
+        $tfms = @("netstandard2.0", "net4.8", "net8.0", "net10.0")
         foreach ($tfm in $tfms) {
-          $dest = Join-Path $testOutBase $tfm
-          New-Item -ItemType Directory -Force -Path $dest | Out-Null
-          Copy-Item (Join-Path $libOutBase "$tfm/Lod.RecordCollections.dll") (Join-Path $dest "Lod.RecordCollections.dll") -Force
+          $dllPath = Join-Path $env:GITHUB_WORKSPACE "src/Lod.RecordCollections/bin/Release/$tfm/Lod.RecordCollections.dll"
+          dotnet Lod.RecordCollections.IlAssembler.dll $dllPath
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         }
 
     - name: Test (Post-IL Modified)
       shell: pwsh
       run: |
+        $config = "Release"
         $tfms = @("net8.0", "net10.0", "net4.8")
+
         foreach ($tfm in $tfms) {
-          dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c Release --framework $tfm --no-restore --verbosity normal
+          $src = Join-Path $env:GITHUB_WORKSPACE "src/Lod.RecordCollections/bin/$config/$tfm/Lod.RecordCollections.dll"
+          $destDir = Join-Path $env:GITHUB_WORKSPACE "src/Lod.RecordCollections.IlModified.Tests/bin/$config/$tfm"
+          $dest = Join-Path $destDir "Lod.RecordCollections.dll"
+
+          New-Item -ItemType Directory -Force -Path $destDir | Out-Null
+          Copy-Item $src $dest -Force
+
+          dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c $config --framework $tfm --no-restore --verbosity normal
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         }

@@ -50,16 +50,19 @@ jobs:
         dotnet build ./src/Lod.RecordCollections/Lod.RecordCollections.csproj -c Release --no-restore -p:DebugType=portable -p:DebugSymbols=true -p:Version=${{ steps.set-version.outputs.version }} -p:AssemblyVersion=${{ steps.set-version.outputs.version }} -p:FileVersion=${{ steps.set-version.outputs.version }}
         dotnet build ./src/Lod.RecordCollections.IlAssembler/Lod.RecordCollections.IlAssembler.csproj -c Release --no-restore
 
-    - name: Test
+    - name: Test (Pre-IL Modified)
       run: dotnet test ./src/Lod.RecordCollections.Tests/Lod.RecordCollections.Tests.csproj -c Release --no-restore
 
     - name: IL Class/Record Conversion
+      shell: pwsh
       working-directory: ./src/Lod.RecordCollections.IlAssembler/bin/Release/net10.0
       run: |
-        dotnet Lod.RecordCollections.IlAssembler.dll ../../../Lod.RecordCollections/bin/Release/netstandard2.0/Lod.RecordCollections.dll
-        dotnet Lod.RecordCollections.IlAssembler.dll ../../../Lod.RecordCollections/bin/Release/net4.8/Lod.RecordCollections.dll
-        dotnet Lod.RecordCollections.IlAssembler.dll ../../../Lod.RecordCollections/bin/Release/net8.0/Lod.RecordCollections.dll
-        dotnet Lod.RecordCollections.IlAssembler.dll ../../../Lod.RecordCollections/bin/Release/net10.0/Lod.RecordCollections.dll
+        $tfms = @("netstandard2.0", "net4.8", "net8.0", "net10.0")
+        foreach ($tfm in $tfms) {
+          $dllPath = Join-Path $env:GITHUB_WORKSPACE "src/Lod.RecordCollections/bin/Release/$tfm/Lod.RecordCollections.dll"
+          dotnet Lod.RecordCollections.IlAssembler.dll $dllPath
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        }
 
     - name: NuGet Pack
       run: dotnet pack ./src/Lod.RecordCollections/Lod.RecordCollections.csproj -c Release --no-restore --include-symbols --no-build -p:Version=${{ steps.set-version.outputs.version }} -p:PackageVersion=${{ steps.set-version.outputs.version }}
@@ -68,18 +71,17 @@ jobs:
       shell: pwsh
       run: |
         $config = "Release"
-        $testOutBase = Join-Path "." "src/Lod.RecordCollections.IlModified.Tests/bin/$config"
-        $libOutBase = Join-Path "." "src/Lod.RecordCollections/bin/$config"
         $tfms = @("net8.0", "net10.0", "net4.8")
 
         foreach ($tfm in $tfms) {
-          $dest = Join-Path $testOutBase $tfm
-          New-Item -ItemType Directory -Force -Path $dest | Out-Null
-          Copy-Item (Join-Path $libOutBase "$tfm/Lod.RecordCollections.dll") (Join-Path $dest "Lod.RecordCollections.dll") -Force
-        }
+          $src = Join-Path $env:GITHUB_WORKSPACE "src/Lod.RecordCollections/bin/$config/$tfm/Lod.RecordCollections.dll"
+          $destDir = Join-Path $env:GITHUB_WORKSPACE "src/Lod.RecordCollections.IlModified.Tests/bin/$config/$tfm"
+          $dest = Join-Path $destDir "Lod.RecordCollections.dll"
 
-        foreach ($tfm in $tfms) {
-          dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c Release --framework $tfm --no-restore --verbosity normal
+          New-Item -ItemType Directory -Force -Path $destDir | Out-Null
+          Copy-Item $src $dest -Force
+
+          dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c $config --framework $tfm --no-restore --verbosity normal
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         }
 
