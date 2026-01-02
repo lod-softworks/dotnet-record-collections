@@ -16,8 +16,8 @@ public sealed class IlModifiedRecordCollectionsSmokeTests
         Assert.AreNotSame(original, clone);
 
         clone.Add(4);
-        Assert.AreEqual(3, original.Count);
-        Assert.AreEqual(4, clone.Count);
+        Assert.HasCount(3, original);
+        Assert.HasCount(4, clone);
     }
 
     [TestMethod]
@@ -33,10 +33,10 @@ public sealed class IlModifiedRecordCollectionsSmokeTests
 
         Assert.IsTrue(original.Equals(clone));
         Assert.AreNotSame(original, clone);
-        Assert.AreEqual(original.Count, clone.Count);
+        Assert.HasCount(original.Count, clone);
 
         clone[3] = 30;
-        Assert.AreEqual(2, original.Count);
-        Assert.AreEqual(3, clone.Count);
+        Assert.HasCount(2, original);
+        Assert.HasCount(3, clone);
     }
 }
