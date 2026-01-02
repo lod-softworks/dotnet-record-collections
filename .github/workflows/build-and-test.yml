@@ -53,10 +53,10 @@ jobs:
         }
 
     - name: Test (Post-IL Modified) net8.0
-      run: dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c Release -m:1 --framework net8.0 --no-restore --verbosity normal
+      run: dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c Release --framework net8.0 --no-restore --verbosity normal
 
     - name: Test (Post-IL Modified) net10.0
-      run: dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c Release -m:1 --framework net10.0 --no-restore --verbosity normal
+      run: dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c Release --framework net10.0 --no-restore --verbosity normal
 
     - name: Test (Post-IL Modified) net4.8
-      run: dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c Release -m:1 --framework net4.8 --no-restore --verbosity normal
+      run: dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c Release --framework net4.8 --no-restore --verbosity normal

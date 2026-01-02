@@ -47,10 +47,6 @@
     </Reference>
   </ItemGroup>
 
-  <ItemGroup Condition="Exists('$(IlVerificationDllPath)')">
-    <Compile Remove="IlVerificationNotAvailable.cs" />
-  </ItemGroup>
-
   <ItemGroup Condition="!Exists('$(IlVerificationDllPath)')">
     <Compile Remove="IlModifiedRecordCollectionsSmokeTests.cs" />
   </ItemGroup>
