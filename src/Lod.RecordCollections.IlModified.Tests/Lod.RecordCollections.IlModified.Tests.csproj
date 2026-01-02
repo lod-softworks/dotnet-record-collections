@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Product>Lod.RecordCollections.IlModified.Tests</Product>
+    <AssemblyName>Lod.RecordCollections.IlModified.Tests</AssemblyName>
+    <RootNamespace>Lod.RecordCollections.IlModified.Tests</RootNamespace>
+    <Copyright>Copyright © 2022-2025 Lod Softworks LLC</Copyright>
+    <Description>Smoke tests against IL-modified Lod.RecordCollections assemblies.</Description>
+    <TargetFrameworks>net8.0;net10.0;net4.8</TargetFrameworks>
+    <TargetType>library</TargetType>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <GenerateProgramFile>false</GenerateProgramFile>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+    <Using Include="System.Collections.Generic" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="4.0.2" />
+    <PackageReference Include="MSTest.TestFramework" Version="4.0.2" />
+  </ItemGroup>
+
+  <!--
+    The IL verification tests are designed to run only in CI.
+
+    In CI, after building Lod.RecordCollections and applying IL modification, the workflow copies
+    the modified Lod.RecordCollections.dll into this project's output folder (next to the test DLL).
+
+    If the DLL is not present (typical local dev), we emit a warning and exclude the IL verification
+    test sources from compilation so the project still builds cleanly.
+  -->
+  <PropertyGroup>
+    <IlVerificationDllPath>$(MSBuildProjectDirectory)\bin\$(Configuration)\$(TargetFramework)\Lod.RecordCollections.dll</IlVerificationDllPath>
+  </PropertyGroup>
+
+  <ItemGroup Condition="Exists('$(IlVerificationDllPath)')">
+    <Reference Include="Lod.RecordCollections">
+      <HintPath>$(IlVerificationDllPath)</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup Condition="!Exists('$(IlVerificationDllPath)')">
+    <Compile Remove="IlModifiedRecordCollectionsSmokeTests.cs" />
+  </ItemGroup>
+
+  <Target Name="WarnIfIlVerificationDllMissing"
+          BeforeTargets="Build"
+          Condition="!Exists('$(IlVerificationDllPath)')">
+    <Warning Text="IL verification tests are only available in the CI/CD pipeline" />
+  </Target>
+
+</Project>

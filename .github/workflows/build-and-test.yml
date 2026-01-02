@@ -19,23 +19,42 @@ jobs:
       with:
         dotnet-version: 10.0.x
 
-    - name: Restore dependencies
+    - name: Restore Dependencies
       run: dotnet restore ./src/Lod.RecordCollections.sln
 
     - name: Build
-      run: dotnet build ./src/Lod.RecordCollections.sln -c Release --no-restore
+      run: |
+        dotnet build ./src/Lod.RecordCollections/Lod.RecordCollections.csproj -c Release --no-restore
+        dotnet build ./src/Lod.RecordCollections.IlAssembler/Lod.RecordCollections.IlAssembler.csproj -c Release --no-restore
 
-    - name: Test
-      run: dotnet test ./src/Lod.RecordCollections.sln -c Release --no-restore --no-build --verbosity normal
+    - name: Test (Pre-IL Modified)
+      run: dotnet test ./src/Lod.RecordCollections.Tests/Lod.RecordCollections.Tests.csproj -c Release --no-restore --verbosity normal
 
-    - name: Convert classes to records (netstandard2.0)
-      run: dotnet ./src/Lod.RecordCollections.IlAssembler/bin/Release/net10.0/Lod.RecordCollections.IlAssembler.dll D:\a\dotnet-record-collections\dotnet-record-collections\src\Lod.RecordCollections\bin\Release\netstandard2.0\Lod.RecordCollections.dll
+    - name: IL Class/Record Conversion
+      shell: pwsh
+      working-directory: ./src/Lod.RecordCollections.IlAssembler/bin/Release/net10.0
+      run: |
+        $tfms = @("netstandard2.0", "net4.8", "net8.0", "net10.0")
+        foreach ($tfm in $tfms) {
+          $dllPath = Join-Path $env:GITHUB_WORKSPACE "src/Lod.RecordCollections/bin/Release/$tfm/Lod.RecordCollections.dll"
+          dotnet Lod.RecordCollections.IlAssembler.dll $dllPath
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        }
 
-    - name: Convert classes to records (net4.8)
-      run: dotnet ./src/Lod.RecordCollections.IlAssembler/bin/Release/net10.0/Lod.RecordCollections.IlAssembler.dll D:\a\dotnet-record-collections\dotnet-record-collections\src\Lod.RecordCollections\bin\Release\net4.8\Lod.RecordCollections.dll
+    - name: Test (Post-IL Modified)
+      shell: pwsh
+      run: |
+        $config = "Release"
+        $tfms = @("net8.0", "net10.0", "net4.8")
 
-    - name: Convert classes to records (net8.0)
-      run: dotnet ./src/Lod.RecordCollections.IlAssembler/bin/Release/net10.0/Lod.RecordCollections.IlAssembler.dll D:\a\dotnet-record-collections\dotnet-record-collections\src\Lod.RecordCollections\bin\Release\net8.0\Lod.RecordCollections.dll
+        foreach ($tfm in $tfms) {
+          $src = Join-Path $env:GITHUB_WORKSPACE "src/Lod.RecordCollections/bin/$config/$tfm/Lod.RecordCollections.dll"
+          $destDir = Join-Path $env:GITHUB_WORKSPACE "src/Lod.RecordCollections.IlModified.Tests/bin/$config/$tfm"
+          $dest = Join-Path $destDir "Lod.RecordCollections.dll"
 
-    - name: Convert classes to records (net10.0)
-      run: dotnet ./src/Lod.RecordCollections.IlAssembler/bin/Release/net10.0/Lod.RecordCollections.IlAssembler.dll D:\a\dotnet-record-collections\dotnet-record-collections\src\Lod.RecordCollections\bin\Release\net10.0\Lod.RecordCollections.dll
+          New-Item -ItemType Directory -Force -Path $destDir | Out-Null
+          Copy-Item $src $dest -Force
+
+          dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c $config --framework $tfm --no-restore --verbosity normal
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        }
