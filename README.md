@@ -1,7 +1,7 @@
 # Record Collections
 
-![Build](https://github.com/lod-softworks/dotnet-record-collections/actions/workflows/build-and-test.yml/badge.svg) 
-![NuGet Version](https://img.shields.io/nuget/v/Lod.RecordCollections?logo=nuget&label=Release&link=https%3A%2F%2Fwww.nuget.org%2Fpackages%2FLod.RecordCollections) ![NuGet Downloads](https://img.shields.io/nuget/dt/Lod.RecordCollections?logo=nuget&label=Downloads&link=https%3A%2F%2Fwww.nuget.org%2Fstats%2Fpackages%2FLod.RecordCollections%3Fgroupby%3DVersion)
+[![Build](https://github.com/lod-softworks/dotnet-record-collections/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/lod-softworks/dotnet-record-collections/actions/workflows/build-and-release.yml)
+[![NuGet Version](https://img.shields.io/nuget/v/Lod.RecordCollections?logo=nuget&label=Release&link=https%3A%2F%2Fwww.nuget.org%2Fpackages%2FLod.RecordCollections)](https://www.nuget.org/packages/Lod.RecordCollections) [![NuGet Downloads](https://img.shields.io/nuget/dt/Lod.RecordCollections?logo=nuget&label=Downloads&link=https%3A%2F%2Fwww.nuget.org%2Fstats%2Fpackages%2FLod.RecordCollections%3Fgroupby%3DVersion)](https://www.nuget.org/stats/packages/Lod.RecordCollections?groupby=Version)
 
 Generic collections that implement value-based equality for use with C# records. Drop-in replacements for standard collections that work correctly with record equality comparison.
 
