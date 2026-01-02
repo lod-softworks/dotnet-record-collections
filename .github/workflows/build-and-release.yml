@@ -78,9 +78,10 @@ jobs:
           Copy-Item (Join-Path $libOutBase "$tfm/Lod.RecordCollections.dll") (Join-Path $dest "Lod.RecordCollections.dll") -Force
         }
 
-        dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c Release --framework net8.0 --no-restore --verbosity normal
-        dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c Release --framework net10.0 --no-restore --verbosity normal
-        dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c Release --framework net4.8 --no-restore --verbosity normal
+        foreach ($tfm in $tfms) {
+          dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c Release --framework $tfm --no-restore --verbosity normal
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        }
 
     - name: NuGet Push
       run: dotnet nuget push ./src/Lod.RecordCollections/bin/Release/Lod.RecordCollections.${{ steps.set-version.outputs.version }}.nupkg --api-key ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json

@@ -1,7 +1,7 @@
 namespace Lod.RecordCollections.IlModified.Tests;
 
 [TestClass]
-public sealed class IlModifiedRecordCollectionsSmokeTests
+public class IlModifiedRecordCollectionsSmokeTests
 {
     [TestMethod]
     public void WithExpression_ClonesRecordList()
