@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/config/">
+    <File Path=".editorconfig" />
+    <File Path=".filenesting.json" />
+  </Folder>
+
+  <Folder Name="/src/">
+    <Project Path="src/Lod.RecordCollections/Lod.RecordCollections.csproj" />
+    <Project Path="src/Lod.RecordCollections.IlAssembler/Lod.RecordCollections.IlAssembler.csproj" />
+  </Folder>
+
+  <Folder Name="/test/">
+    <Project Path="test/Lod.RecordCollections.Tests/Lod.RecordCollections.Tests.csproj" />
+    <Project Path="test/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj" />
+  </Folder>
+</Solution>
