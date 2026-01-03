@@ -51,7 +51,7 @@ jobs:
         dotnet build ./src/Lod.RecordCollections.IlAssembler/Lod.RecordCollections.IlAssembler.csproj -c Release --no-restore
 
     - name: Test (Pre-IL Modified)
-      run: dotnet test ./src/Lod.RecordCollections.Tests/Lod.RecordCollections.Tests.csproj -c Release --no-restore
+      run: dotnet test ./test/Lod.RecordCollections.Tests/Lod.RecordCollections.Tests.csproj -c Release --no-restore
 
     - name: IL Class/Record Conversion
       shell: pwsh
@@ -75,13 +75,13 @@ jobs:
 
         foreach ($tfm in $tfms) {
           $src = Join-Path $env:GITHUB_WORKSPACE "src/Lod.RecordCollections/bin/$config/$tfm/Lod.RecordCollections.dll"
-          $destDir = Join-Path $env:GITHUB_WORKSPACE "src/Lod.RecordCollections.IlModified.Tests/bin/$config/$tfm"
+          $destDir = Join-Path $env:GITHUB_WORKSPACE "test/Lod.RecordCollections.IlModified.Tests/bin/$config/$tfm"
           $dest = Join-Path $destDir "Lod.RecordCollections.dll"
 
           New-Item -ItemType Directory -Force -Path $destDir | Out-Null
           Copy-Item $src $dest -Force
 
-          dotnet test ./src/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c $config --framework $tfm --no-restore --verbosity normal
+          dotnet test ./test/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj -c $config --framework $tfm --no-restore --verbosity normal
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         }
 
