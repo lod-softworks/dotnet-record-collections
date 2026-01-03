@@ -4,7 +4,7 @@
     <Product>Lod.RecordCollections.Tests</Product>
     <AssemblyName>Lod.RecordCollections.Tests</AssemblyName>
     <RootNamespace>Lod.RecordCollections.Tests</RootNamespace>
-    <Copyright>Copyright © 2022-2025 Lod Softworks LLC</Copyright>
+    <Copyright>Copyright © 2022-$([System.DateTime]::Now.ToString("yyyy")) Lod Softworks LLC</Copyright>
     <Description>Unit tests for the Lod.RecordCollections project.</Description>
     <Authors>Lod Softworks LLC</Authors>
     <TargetFrameworks>net8.0;net10.0;net4.8</TargetFrameworks>

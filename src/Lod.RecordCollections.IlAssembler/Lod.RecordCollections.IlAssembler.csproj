@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Product>Lod.RecordCollections.IlAssembler</Product>
     <AssemblyName>Lod.RecordCollections.IlAssembler</AssemblyName>
-    <Copyright>Copyright © 2022-2025 Lod Softworks LLC</Copyright>
+    <Copyright>Copyright © 2022-$([System.DateTime]::Now.ToString("yyyy")) Lod Softworks LLC</Copyright>
     <Description>IL disembler and assembler to make record compliant classes.</Description>
     <Authors>Lod Softworks LLC</Authors>
     <TargetFramework>net10.0</TargetFramework>
