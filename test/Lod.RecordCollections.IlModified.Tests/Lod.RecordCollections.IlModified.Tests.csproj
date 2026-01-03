@@ -4,7 +4,7 @@
     <Product>Lod.RecordCollections.IlModified.Tests</Product>
     <AssemblyName>Lod.RecordCollections.IlModified.Tests</AssemblyName>
     <RootNamespace>Lod.RecordCollections.IlModified.Tests</RootNamespace>
-    <Copyright>Copyright © 2022-2025 Lod Softworks LLC</Copyright>
+    <Copyright>Copyright © 2022-$([System.DateTime]::Now.ToString("yyyy")) Lod Softworks LLC</Copyright>
     <Description>Smoke tests against IL-modified Lod.RecordCollections assemblies.</Description>
     <TargetFrameworks>net8.0;net10.0;net4.8</TargetFrameworks>
     <TargetType>library</TargetType>
