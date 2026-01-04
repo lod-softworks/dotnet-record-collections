@@ -9,8 +9,8 @@
     <Project Path="src/Lod.RecordCollections.IlAssembler/Lod.RecordCollections.IlAssembler.csproj" />
   </Folder>
 
-  <Folder Name="/test/">
-    <Project Path="test/Lod.RecordCollections.Tests/Lod.RecordCollections.Tests.csproj" />
-    <Project Path="test/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj" />
+  <Folder Name="/tests/">
+    <Project Path="tests/Lod.RecordCollections.Tests/Lod.RecordCollections.Tests.csproj" />
+    <Project Path="tests/Lod.RecordCollections.IlModified.Tests/Lod.RecordCollections.IlModified.Tests.csproj" />
   </Folder>
 </Solution>
