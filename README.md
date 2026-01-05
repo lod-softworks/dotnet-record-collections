@@ -93,7 +93,7 @@ RecordCollectionCloner.ElementCloner = obj => MyCustomCloner.Clone(obj, deep: tr
 The `RecordEnumerable` class (in the `System.Linq` namespace) provides extension methods similar to `Enumerable`, but for creating Record Collections from any `IEnumerable<T>`. These methods mirror the standard LINQ `ToList()`, `ToDictionary()`, etc., but return Record Collections instead:
 
 - **ToRecordList** - Creates a new `RecordList<T>` from an `IEnumerable<T>`
-- **ToRecordList** - Creates a new `RecordDictionary<TKey, TValue>` from an `IEnumerable<T> `and key/value delegate selectors.
+- **ToRecordDictionary** - Creates a new `RecordDictionary<TKey, TValue>` from an `IEnumerable<T> `and key/value delegate selectors.
 - **ToRecordSet** - Creates a new `RecordSet<T>` from an `IEnumerable<T>`
 - **ToRecordStack** - Creates a new `RecordStack<T>` from an `IEnumerable<T>`
 - **ToRecordQueue** - Creates a new `RecordQueue<T>` from an `IEnumerable<T>`
